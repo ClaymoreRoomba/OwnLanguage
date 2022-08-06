@@ -8,6 +8,8 @@ const TT_DIV    = "DIV";
 const TT_LPAREN = "LPAREN";
 const TT_RPAREN = "RPAREN";
 
+//TOKEN
+
 class Token{
     constructor(type, value){
         this.type = type;
@@ -17,6 +19,33 @@ class Token{
     }
     
 };
+
+//ERRORS
+
+class Error{
+
+    constructor(error_name, details){
+
+        this.error_name = error_name;
+        this.details = details;
+
+    }
+
+    asString(){
+        return `${this.error_name}: ${this.details}`;
+    }
+
+};
+
+class IllegalCharError extends Error{
+
+    constructor(details){
+        super('Illegal Character', details);
+    }
+
+};
+
+//LEXERS
 
 class Lexer{
 
@@ -59,6 +88,9 @@ class Lexer{
                     tokens.push(new Token(TT_RPAREN));
                     break;
                 
+                case ' ':
+                    break;
+
                 default:
                     {
                         const char = this.text[i];
@@ -92,6 +124,13 @@ class Lexer{
                                 digits = '';
                                 numOfPoints = 0;
                             }
+                        } else {
+
+                            return {
+                                tokens: [],
+                                error: new IllegalCharError(`Illegal char: '${char}'`)
+                            };
+
                         }
 
                     }
@@ -101,8 +140,18 @@ class Lexer{
             }
 
         }
-        return tokens;
+        
+        return {
+            tokens, 
+            error: null
+        };
     }
 };
 
 debugger;
+//RUN
+
+function run(text){
+    const lexer = new Lexer(text);
+    console.log(lexer)
+}
