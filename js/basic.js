@@ -140,7 +140,7 @@ class Lexer{
             }
 
         }
-        
+
         return {
             tokens, 
             error: null
@@ -148,10 +148,9 @@ class Lexer{
     }
 };
 
-debugger;
 //RUN
 
-function run(text){
-    const lexer = new Lexer(text);
-    console.log(lexer)
+export function run(text){
+    const {tokens, error} = new Lexer(text).makeTokens();
+    return {tokens, error};
 }
