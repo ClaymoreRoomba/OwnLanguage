@@ -8,7 +8,7 @@ const TT_DIV    = "DIV";
 const TT_LPAREN = "LPAREN";
 const TT_RPAREN = "RPAREN";
 
-//TOKEN
+//TOKEN ####################################################
 
 class Token{
     constructor(type, value){
@@ -20,47 +20,87 @@ class Token{
     
 };
 
-//ERRORS
+//ERRORS ####################################################
 
 class Error{
 
-    constructor(error_name, details){
+    constructor(pos, error_name, details){
 
+        this.pos = pos;
         this.error_name = error_name;
         this.details = details;
 
     }
 
     asString(){
-        return `${this.error_name}: ${this.details}`;
+        return `${this.error_name}: ${this.details}
+        File: ${this.pos.fileName} at line: ${this.pos.line + 1}`;
     }
 
 };
 
 class IllegalCharError extends Error{
 
-    constructor(details){
-        super('Illegal Character', details);
+    constructor(pos, details){
+        super(pos, 'Illegal Character', details);
     }
 
 };
 
-//LEXERS
+//POSITION ####################################################
+
+class Position{
+
+    constructor(idx, line, col, fileName, fileTxt){
+        this.idx = idx;
+        this.line = line;
+        this.col = col;
+        this.fileName = fileName;
+        this.fileTxt = fileTxt;
+    }
+
+    advance(curr_char){
+
+        this.col++;
+        this.idx++;
+
+        if(curr_char == '\n'){
+
+            this.line++;
+            this.col = 0;
+
+        }
+
+        return this;
+    }
+
+    copy(){
+        return new Position(this.idx, this.line, this.col, this.fileName, this.fileTxt);
+    }
+
+};
+
+//LEXERS ####################################################
 
 class Lexer{
 
-    constructor(text){
+    constructor(fileName, text){
+        this.fileName = fileName;
         this.text = text;
     }
 
     makeTokens(){
         const tokens = new Array();
 
+        let pos = new Position(0, 0, 0, this.fileName, this.text);
+
         //used to store strings of numbers
         let numOfPoints = 0;
         let digits = '';
 
         for(let i = 0; i < this.text.length; i++){
+
+            pos.advance(this.text[i]);
 
             switch(this.text[i]){
 
@@ -128,7 +168,7 @@ class Lexer{
 
                             return {
                                 tokens: [],
-                                error: new IllegalCharError(`Illegal char: '${char}'`)
+                                error: new IllegalCharError(pos, `Illegal char: '${char}'`)
                             };
 
                         }
@@ -148,9 +188,9 @@ class Lexer{
     }
 };
 
-//RUN
+//RUN ####################################################
 
-export function run(text){
-    const {tokens, error} = new Lexer(text).makeTokens();
+export function run(fileName, text){
+    const {tokens, error} = new Lexer(fileName, text).makeTokens();
     return {tokens, error};
 }

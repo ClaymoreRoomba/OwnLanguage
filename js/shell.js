@@ -8,7 +8,7 @@ while(true){
     const input = prompt("basic > ");
     if(input === null) break;
 
-    const result = run(input);
+    const result = run('stdin', input);
 
     if(result.error){
         console.error(result.error.asString());
