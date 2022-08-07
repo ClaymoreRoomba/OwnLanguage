@@ -7,15 +7,20 @@ const TT_MUL    = "MUL";
 const TT_DIV    = "DIV";
 const TT_LPAREN = "LPAREN";
 const TT_RPAREN = "RPAREN";
+const TT_EOF    = "EOF";
 
 //TOKEN ####################################################
 
 class Token{
-    constructor(type, value){
+    constructor(type, value, pos){
         this.type = type;
-        this.value = value;
+        this.value = value || null;
         //just a way to neatly print the token
         this.out = this.type + (this.value ? ":" + this.value : "");
+
+        if(pos){
+            this.pos = pos.copy();
+        }
     }
 };
 
@@ -46,6 +51,14 @@ class IllegalCharError extends Error{
 
 };
 
+class InvalidSyntaxError extends Error{
+
+    constructor(pos, details){
+        super(pos, 'Invalid Syntax', details);
+    }
+
+};
+
 //POSITION ####################################################
 
 class Position{
@@ -58,7 +71,7 @@ class Position{
         this.fileTxt = fileTxt;
     }
 
-    advance(curr_char){
+    advance(curr_char = null){
 
         this.col++;
         this.idx++;
@@ -104,27 +117,27 @@ class Lexer{
             switch(this.text[i]){
 
                 case '+':
-                    tokens.push(new Token(TT_PLUS));
+                    tokens.push(new Token(TT_PLUS, null, pos));
                     break;
                 
                 case '-':
-                    tokens.push(new Token(TT_MINUS));
+                    tokens.push(new Token(TT_MINUS, null, pos));
                     break;
                 
                 case '*':
-                    tokens.push(new Token(TT_MUL));
+                    tokens.push(new Token(TT_MUL, null, pos));
                     break;
                 
                 case '/':
-                    tokens.push(new Token(TT_DIV));
+                    tokens.push(new Token(TT_DIV, null, pos));
                     break;
 
                 case '(':
-                    tokens.push(new Token(TT_LPAREN));
+                    tokens.push(new Token(TT_LPAREN, null, pos));
                     break;
     
                 case ')':
-                    tokens.push(new Token(TT_RPAREN));
+                    tokens.push(new Token(TT_RPAREN, null, pos));
                     break;
                 
                 case ' ':
@@ -142,7 +155,7 @@ class Lexer{
                                 if(numOfPoints++ === 0){
                                     digits += char;
                                 } else {
-                                    tokens.push(new Token(TT_FLOAT, +digits));
+                                    tokens.push(new Token(TT_FLOAT, +digits, pos));
                                     digits = '';
                                     numOfPoints = 0;
                                 }
@@ -157,7 +170,7 @@ class Lexer{
                                     digits.includes('.') ? 
                                     TT_FLOAT :
                                     TT_INT, 
-                                    +digits));
+                                    +digits, pos));
                                 
                                 //reset the storage
                                 digits = '';
@@ -178,11 +191,12 @@ class Lexer{
 
         }
 
+        tokens.push(new Token(TT_EOF, null, pos));
         return {
             tokens, 
             error: null
         };
-        
+
     }
 };
 
@@ -205,6 +219,41 @@ class BinOpNode{
         this.leftNode = leftNode;
         this.opToken = opToken;
         this.rightNode = rightNode;
+
+    }
+
+};
+
+//PARSE RESULT ##############################################
+
+class ParseResult{
+
+    constructor(){
+        this.error = null;
+        this.node = null;
+    }
+
+    register(result){
+
+        if(result instanceof ParseResult){
+
+            if(result.error) this.error = result.error;
+            return result.node;
+
+        }
+
+        return result;
+    }
+    success(node){
+
+        this.node = node;
+        return this;
+
+    }
+    failure(err){
+
+        this.error = err;
+        return this;
 
     }
 
@@ -237,7 +286,18 @@ class Parser{
     }
 
     parse(){
-        return this.expr();
+        const res = this.expr();
+        
+        if(!res.error && this.current_token.type !== TT_EOF){
+            
+            return res.failure( new InvalidSyntaxError(
+                this.current_token.pos,
+                "Expected +, -, *, or /"
+            ) );
+
+        }
+
+        return res;
     }
 
     binaryOperation(rule, opTTs){
@@ -262,54 +322,71 @@ class Parser{
 
     factor(){
 
+        const res = new ParseResult();
         const token = this.current_token;
 
         if([TT_INT, TT_FLOAT].includes(token.type)){
-            this.advance();
-            return new NumNode(token);
+            
+            res.register( this.advance() );
+            
+            return res.success(new NumNode(token));
         }
+
+        return res.failure(new InvalidSyntaxError(token.pos, "Expected a number"));
 
     }
     term(){
 
-        let left = this.factor()
+        const res = new ParseResult();
+        let left = res.register(this.factor());
+
+        if(res.error) return res;
 
         while([TT_MUL, TT_DIV].includes(this.current_token.type)){
 
             let opToken = this.current_token;
             
-            this.advance();
+            res.register(this.advance());
             
-            let right = this.factor();
+            let right = res.register(this.factor());
+
+            if(res.error) return res;
 
             left = new BinOpNode(left, opToken, right);
 
         }
 
-        return left;
+        return res.success(left);
 
     }
     expr(){
 
-        let left = this.term()
+        const res = new ParseResult();
+        let left = res.register(this.term());
+
+        if(res.error) return res;
 
         while([TT_PLUS, TT_MINUS].includes(this.current_token.type)){
 
             let opToken = this.current_token;
             
-            this.advance();
+            res.register(this.advance());
             
-            let right = this.term();
+            let right = res.register(this.term());
+
+            if(res.error) return res;
 
             left = new BinOpNode(left, opToken, right);
 
         }
 
-        return left;
+        return res.success(left);
 
     }
 
 };
+
+debugger;
 
 //RUN ####################################################
 
@@ -323,6 +400,6 @@ export function run(fileName, text){
     const parser = new Parser(tokens);
     const ast = parser.parse();
 
-    return {ast, error: null};
+    return {ast: ast.node, error: ast.error};
     
 }
