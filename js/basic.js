@@ -426,20 +426,55 @@ class Parser{
 
 };
 
+//INTERPRETER ############################################
+
+class Interpreter{
+
+    //looking through the operation tree to get the order of operations
+    visit(node){
+        const methodName = `visit_${node?.constructor.name}`;
+        const fn = this[methodName];
+        return fn(node);
+    }
+
+    visit_undefined(node){
+        console.log("Found undefined node");
+    }
+    visit_NumNode(node){
+        console.log("Found num node");
+    }
+    visit_BinOpNode(node){
+        console.log("Found binop node")
+        new Interpreter().visit(node.leftNode);
+        new Interpreter().visit(node.rightNode);
+    }
+    visit_UnOpNode(node){
+        console.log("Found unop node");
+        new Interpreter().visit(node.node);
+    }
+
+};
+
 debugger;
 
 //RUN ####################################################
 
 export function run(fileName, text){
 
+    //Generate tokens
     const {tokens, error} = new Lexer(fileName, text).makeTokens();
     if(error) return {tokens: null, error};
-
 
     //Generate Abstract Syntax Tree
     const parser = new Parser(tokens);
     const ast = parser.parse();
+    if(ast.error) return {ast: null, err: ast.error}
 
-    return {ast: ast.node, error: ast.error};
+    //run program
+    const interpreter = new Interpreter();
+    interpreter.visit(ast.node);
+
+    return {ast: null, error: null};
+    // return {ast: ast.node, error: ast.error};
     
 }
