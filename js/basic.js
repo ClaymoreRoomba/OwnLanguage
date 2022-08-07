@@ -425,6 +425,44 @@ class Parser{
     }
 
 };
+//VALUES ############################################
+
+class Number{
+
+    constructor(value){
+        this.value = value;
+        this.setPos();
+    }
+
+    setPos(pos = null){
+
+        this.pos = pos;
+        return this;
+
+    }
+
+    addedTo(other){
+        if(other instanceof Number){
+            return new Number(this.value + other.value);
+        }
+    }
+    subbedBy(other){
+        if(other instanceof Number){
+            return new Number(this.value - other.value);
+        }
+    }
+    multedBy(other){
+        if(other instanceof Number){
+            return new Number(this.value * other.value);
+        }
+    }
+    divedBy(other){
+        if(other instanceof Number){
+            return new Number(this.value / other.value);
+        }
+    }
+
+};
 
 //INTERPRETER ############################################
 
@@ -441,16 +479,38 @@ class Interpreter{
         console.log("Found undefined node");
     }
     visit_NumNode(node){
-        console.log("Found num node");
+        return new Number(node.token.value).setPos(node.token.pos);
     }
     visit_BinOpNode(node){
-        console.log("Found binop node")
-        new Interpreter().visit(node.leftNode);
-        new Interpreter().visit(node.rightNode);
+        const left = new Interpreter().visit(node.leftNode);
+        const right = new Interpreter().visit(node.rightNode);
+
+        let result;
+        switch(node.opToken.type){
+            case TT_PLUS:
+                result = left.addedTo(right);
+                break;
+            case TT_MINUS:
+                result = left.subbedBy(right);
+                break;
+            case TT_MUL:
+                result = left.multedBy(right);
+                break;
+            case TT_DIV:
+                result = left.divedBy(right);
+                break;
+        }
+
+        return result.setPos(node.opToken.pos);
     }
     visit_UnOpNode(node){
-        console.log("Found unop node");
-        new Interpreter().visit(node.node);
+        let num = new Interpreter().visit(node.node);
+        
+        if(node.opToken.type === TT_MINUS){
+            num = num.multedBy(new Number(-1));
+        }
+
+        return num.setPos(node.token.pos);
     }
 
 };
@@ -468,13 +528,13 @@ export function run(fileName, text){
     //Generate Abstract Syntax Tree
     const parser = new Parser(tokens);
     const ast = parser.parse();
-    if(ast.error) return {ast: null, err: ast.error}
+    if(ast.error) return {ast: null, error: ast.error}
 
     //run program
     const interpreter = new Interpreter();
-    interpreter.visit(ast.node);
+    const result = interpreter.visit(ast.node);
 
-    return {ast: null, error: null};
+    return {result, error: null};
     // return {ast: ast.node, error: ast.error};
     
 }
