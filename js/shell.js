@@ -13,7 +13,7 @@ while(true){
     if(result.error){
         console.error(result.error.asString());
     } else {
-        console.log(result.tokens.map(token => token.out));
+        console.log(result.ast);
     }
     
 }

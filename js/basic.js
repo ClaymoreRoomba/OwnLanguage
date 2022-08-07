@@ -17,7 +17,6 @@ class Token{
         //just a way to neatly print the token
         this.out = this.type + (this.value ? ":" + this.value : "");
     }
-    
 };
 
 //ERRORS ####################################################
@@ -188,9 +187,143 @@ class Lexer{
     }
 };
 
+//NODES ####################################################
+//make an operations tree to organize the order of operations
+
+class NumNode{
+
+    constructor(token){
+        this.token = token;
+    }
+
+};
+
+//Binary operator
+class BinOpNode{
+
+    constructor(leftNode, opToken, rightNode){
+
+        this.leftNode = leftNode;
+        this.opToken = opToken;
+        this.rightNode = rightNode;
+
+    }
+
+};
+
+//PARSER ####################################################
+
+class Parser{
+
+    constructor(tokens){
+        
+        this.tokens = tokens;
+        this.tok_idx = -1;
+        this.advance();
+
+    }
+
+    //making a for loop that can advance anywhere in the code
+    advance(){
+
+        this.tok_idx++;
+
+        if(this.tok_idx < this.tokens.length){
+
+            this.current_token = this.tokens[this.tok_idx];
+
+        }
+        return this.current_token;
+
+    }
+
+    parse(){
+        return this.expr();
+    }
+
+    binaryOperation(rule, opTTs){
+
+        let left = rule()
+
+        while(opTTs.includes(this.current_token.type)){
+
+            let opToken = this.current_token;
+            
+            this.advance();
+            
+            let right = rule();
+
+            left = BinOpNode(left, opToken, right);
+
+        }
+
+        return left;
+
+    }
+
+    factor(){
+
+        const token = this.current_token;
+
+        if([TT_INT, TT_FLOAT].includes(token.type)){
+            this.advance();
+            return new NumNode(token);
+        }
+
+    }
+    term(){
+
+        let left = this.factor()
+
+        while([TT_MUL, TT_DIV].includes(this.current_token.type)){
+
+            let opToken = this.current_token;
+            
+            this.advance();
+            
+            let right = this.factor();
+
+            left = new BinOpNode(left, opToken, right);
+
+        }
+
+        return left;
+
+    }
+    expr(){
+
+        let left = this.term()
+
+        while([TT_PLUS, TT_MINUS].includes(this.current_token.type)){
+
+            let opToken = this.current_token;
+            
+            this.advance();
+            
+            let right = this.term();
+
+            left = new BinOpNode(left, opToken, right);
+
+        }
+
+        return left;
+
+    }
+
+};
+
 //RUN ####################################################
 
 export function run(fileName, text){
+
     const {tokens, error} = new Lexer(fileName, text).makeTokens();
-    return {tokens, error};
+    if(error) return {tokens: null, error};
+
+
+    //Generate Abstract Syntax Tree
+    const parser = new Parser(tokens);
+    const ast = parser.parse();
+
+    return {ast, error: null};
+    
 }
