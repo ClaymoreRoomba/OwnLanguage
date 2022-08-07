@@ -224,6 +224,17 @@ class BinOpNode{
 
 };
 
+class UnOpNode{
+
+    constructor(opToken, node){
+
+        this.opToken = opToken;
+        this.node = node;
+
+    }
+
+};
+
 //PARSE RESULT ##############################################
 
 class ParseResult{
@@ -325,11 +336,40 @@ class Parser{
         const res = new ParseResult();
         const token = this.current_token;
 
-        if([TT_INT, TT_FLOAT].includes(token.type)){
+        //checking if there is a plus or minus infront of a number
+        if([TT_PLUS, TT_MINUS].includes(token.type)){
+
+            res.register( this.advance() );
+
+            const factor = res.register(this.factor());
+
+            if(res.error) return res;
+            return res.success(new UnOpNode(token, factor));
+
+        }
+        
+        else if([TT_INT, TT_FLOAT].includes(token.type)){
             
             res.register( this.advance() );
             
             return res.success(new NumNode(token));
+        }
+
+        else if(token.type === TT_LPAREN){
+
+            res.register(this.advance());
+
+            const expr = res.register(this.expr());
+
+            if(res.error) return res;
+
+            if(this.current_token.type === TT_RPAREN){
+
+                res.register(this.advance());
+                return res.success(expr)
+
+            } else return res.failure(new InvalidSyntaxError(this.current_token.pos, "Expected ')'"));
+
         }
 
         return res.failure(new InvalidSyntaxError(token.pos, "Expected a number"));
