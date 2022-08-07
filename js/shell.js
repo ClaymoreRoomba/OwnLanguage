@@ -8,12 +8,14 @@ while(true){
     const input = prompt("basic > ");
     if(input === null) break;
 
-    const result = run('stdin', input);
+    if(input === "clear") console.clear();
+    else {
+        const result = run('stdin', input);
 
-    if(result.error){
-        console.error(result.error.asString());
-    } else {
-        console.log(result.ast);
+        if(result.error){
+            console.error(result.error.asString());
+        } else {
+            console.log(result.ast);
+        }
     }
-    
 }
