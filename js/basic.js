@@ -574,6 +574,9 @@ debugger;
 
 export function run(fileName, text){
 
+    //Fixing using brackets to multiply
+    text = text.replace(/(\d)\(/, '$1' + ' * (');
+    
     //Generate tokens
     const {tokens, error} = new Lexer(fileName, text).makeTokens();
     if(error) return {tokens: null, error};
