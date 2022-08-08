@@ -15,7 +15,7 @@ while(true){
         if(result.error){
             console.error(result.error.asString());
         } else {
-            console.log("logging result:", result);
+            console.log("logging result:", result.result.value);
         }
     }
 }
