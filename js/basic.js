@@ -5,6 +5,7 @@ const TT_PLUS   = "PLUS";
 const TT_MINUS  = "MINUS";
 const TT_MUL    = "MUL";
 const TT_DIV    = "DIV";
+const TT_POW    = "POW";
 const TT_LPAREN = "LPAREN";
 const TT_RPAREN = "RPAREN";
 const TT_EOF    = "EOF";
@@ -130,6 +131,10 @@ class Lexer{
                 
                 case '/':
                     tokens.push(new Token(TT_DIV, null, pos));
+                    break;
+
+                case '^':
+                    tokens.push(new Token(TT_POW, null, pos));
                     break;
 
                 case '(':
@@ -331,24 +336,12 @@ class Parser{
 
     }
 
-    factor(){
+    unit(){
 
         const res = new ParseResult();
         const token = this.current_token;
 
-        //checking if there is a plus or minus infront of a number
-        if([TT_PLUS, TT_MINUS].includes(token.type)){
-
-            res.register( this.advance() );
-
-            const factor = res.register(this.factor());
-
-            if(res.error) return res;
-            return res.success(new UnOpNode(token, factor));
-
-        }
-        
-        else if([TT_INT, TT_FLOAT].includes(token.type)){
+        if([TT_INT, TT_FLOAT].includes(token.type)){
             
             res.register( this.advance() );
             
@@ -372,7 +365,56 @@ class Parser{
 
         }
 
-        return res.failure(new InvalidSyntaxError(token.pos, "Expected a number"));
+        return res.failure(new InvalidSyntaxError(
+            this.current_token.pos,
+            "Expected a Number, '+', '-', or '('"
+            ));
+
+    }
+
+    power(){
+
+        const res = new ParseResult();
+        let left = res.register(this.unit());
+
+        if(res.error) return res;
+
+        while([TT_POW].includes(this.current_token.type)){
+
+            let opToken = this.current_token;
+            
+            res.register(this.advance());
+            
+            let right = res.register(this.factor());
+
+            if(res.error) return res;
+
+            left = new BinOpNode(left, opToken, right);
+
+        }
+
+        return res.success(left);
+
+    }
+
+    factor(){
+
+        const res = new ParseResult();
+        const token = this.current_token;
+
+        //checking if there is a plus or minus infront of a number
+        if([TT_PLUS, TT_MINUS].includes(token.type)){
+
+            res.register( this.advance() );
+
+            const factor = res.register(this.factor());
+
+            if(res.error) return res;
+            return res.success(new UnOpNode(token, factor));
+
+        }
+
+        return this.power();
 
     }
     term(){
@@ -458,7 +500,15 @@ class Number{
     }
     divedBy(other){
         if(other instanceof Number){
+            if(other.value === 0){
+                return new Error(other.pos, "DIV BY 0", "attempted divide by 0");
+            }
             return new Number(this.value / other.value);
+        }
+    }
+    powedBy(other){
+        if(other instanceof Number){
+            return new Number(this.value ** other.value);
         }
     }
 
@@ -499,18 +549,21 @@ class Interpreter{
             case TT_DIV:
                 result = left.divedBy(right);
                 break;
+            case TT_POW:
+                result = left.powedBy(right);
+                break;
         }
 
         return result.setPos(node.opToken.pos);
     }
     visit_UnOpNode(node){
         let num = new Interpreter().visit(node.node);
-        
+
         if(node.opToken.type === TT_MINUS){
             num = num.multedBy(new Number(-1));
         }
 
-        return num.setPos(node.token.pos);
+        return num.setPos(node.node.token.pos);
     }
 
 };
