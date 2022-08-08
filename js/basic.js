@@ -1,14 +1,17 @@
 //token types (TT)
-const TT_INT    = "INT";
-const TT_FLOAT  = "FLOAT";
-const TT_PLUS   = "PLUS";
-const TT_MINUS  = "MINUS";
-const TT_MUL    = "MUL";
-const TT_DIV    = "DIV";
-const TT_POW    = "POW";
-const TT_LPAREN = "LPAREN";
-const TT_RPAREN = "RPAREN";
-const TT_EOF    = "EOF";
+const TT_INT        = "INT";
+const TT_FLOAT      = "FLOAT";
+const TT_IDENTIFIER = "IDENTIFIER";
+const TT_KEYWORD    = "KEYWORD";
+const TT_PLUS       = "PLUS";
+const TT_MINUS      = "MINUS";
+const TT_MUL        = "MUL";
+const TT_DIV        = "DIV";
+const TT_POW        = "POW";
+const TT_EQ         = "EQUALS";
+const TT_LPAREN     = "LPAREN";
+const TT_RPAREN     = "RPAREN";
+const TT_EOF        = "EOF";
 
 //TOKEN ####################################################
 
@@ -135,6 +138,10 @@ class Lexer{
 
                 case '^':
                     tokens.push(new Token(TT_POW, null, pos));
+                    break;
+
+                case '=':
+                    tokens.push(new Token(TT_EQ, null, pos));
                     break;
 
                 case '(':
