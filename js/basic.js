@@ -116,9 +116,10 @@ class Lexer{
 
         for(let i = 0; i < this.text.length; i++){
 
-            pos.advance(this.text[i]);
+            const char = this.text[i];
+            pos.advance(char);
 
-            switch(this.text[i]){
+            switch(char){
 
                 case '+':
                     tokens.push(new Token(TT_PLUS, null, pos));
@@ -157,7 +158,6 @@ class Lexer{
 
                 default:
                     {
-                        const char = this.text[i];
 
                         //if the char is a digit or a dec point followed by a number
                         if(/\d/.test(char) || (/\./.test(char) && /\d/.test(this.text[i + 1]))){
@@ -188,7 +188,9 @@ class Lexer{
                                 digits = '';
                                 numOfPoints = 0;
                             }
-                        } else {
+                        } 
+                        
+                        else {
 
                             return {
                                 tokens: [],
