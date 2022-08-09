@@ -1,8 +1,6 @@
 //token types (TT)
 const TT_INT        = "INT";
 const TT_FLOAT      = "FLOAT";
-const TT_IDENTIFIER = "IDENTIFIER";
-const TT_KEYWORD    = "KEYWORD";
 const TT_PLUS       = "PLUS";
 const TT_MINUS      = "MINUS";
 const TT_MUL        = "MUL";
@@ -139,10 +137,6 @@ class Lexer{
 
                 case '^':
                     tokens.push(new Token(TT_POW, null, pos));
-                    break;
-
-                case '=':
-                    tokens.push(new Token(TT_EQ, null, pos));
                     break;
 
                 case '(':
