@@ -1,8 +1,3 @@
-//TODO: MAKE IDENTIFIER METHOD; time: 2:22
-const LETTERS = "abcdefghijklmnopqrstuvwxyz".split('');
-const DIGITS = [0, 1, 2, 3, 4, 5, 6, 7, 8, 9];
-const LETTERS_DIGITS = LETTERS.concat(DIGITS);
-
 //token types (TT)
 const TT_INT        = "INT";
 const TT_FLOAT      = "FLOAT";
@@ -195,10 +190,6 @@ class Lexer{
                             }
                         } 
                         
-                        else if(LETTERS.includes(char)){
-                            tokens.push(this.makeIdentifier());
-                        }
-
                         else {
 
                             return {
